@@ -33,10 +33,31 @@ import static org.testng.Assert.*;
 public class WebSphereDetectorTest extends BaseDetectorTest {
 
     @Test
+    public void detectLiberty() throws MalformedObjectNameException, InstanceNotFoundException, ReflectionException, AttributeNotFoundException, MBeanException {
+        ServerDetector detector = new WebsphereDetector();
+        ObjectName serverMbean = new ObjectName(LIBERTY_SERVER_MBEAN);
+        MBeanServer mockServer = createMock(MBeanServer.class);
+        expect(mockServer.queryNames(new ObjectName("WebSphere:j2eeType=J2EEServer,*"),null)).
+                andStubReturn(new HashSet<ObjectName>(Arrays.asList(serverMbean)));
+        expect(mockServer.isRegistered(serverMbean)).andStubReturn(true);
+        expect(mockServer.getAttribute(serverMbean,"serverVendor")).andReturn("IBM");
+        expect(mockServer.getAttribute(serverMbean,"serverVersion")).andReturn(SERVER_VERSION_19_0_0_6);
+        replay(mockServer);
+
+        ServerHandle info = detector.detect(getMBeanServerManager(mockServer));
+        assertEquals(info.getVendor(),"IBM");
+        assertEquals(info.getProduct(),"websphere");
+        assertEquals(info.getVersion(), "19.0.0.6");
+        assertNull(info.getExtraInfo(null));
+    }
+    
+    @Test
     public void detect() throws MalformedObjectNameException, InstanceNotFoundException, ReflectionException, AttributeNotFoundException, MBeanException {
         ServerDetector detector = new WebsphereDetector();
         ObjectName serverMbean = new ObjectName(SERVER_MBEAN);
         MBeanServer mockServer = createMock(MBeanServer.class);
+        expect(mockServer.queryNames(new ObjectName("WebSphere:j2eeType=J2EEServer,*"),null)).
+        		andStubReturn(new HashSet<ObjectName>());
         expect(mockServer.queryNames(new ObjectName("*:j2eeType=J2EEServer,type=Server,*"),null)).
                 andStubReturn(new HashSet<ObjectName>(Arrays.asList(serverMbean)));
         expect(mockServer.isRegistered(serverMbean)).andStubReturn(true);
@@ -57,6 +78,8 @@ public class WebSphereDetectorTest extends BaseDetectorTest {
                                          "mbeanIdentifier=cells/bhutNode02Cell/nodes/bhutNode02/servers/server1/server.xml#Server_1245012281417," +
                                          "name=server1,node=bhutNode02,platform=proxy,process=server1,processType=UnManagedProcess," +
                                          "spec=1.0,type=Server,version=6.1.0.33";
+    
+    private static String LIBERTY_SERVER_MBEAN = "WebSphere:name=defaultServer,j2eeType=J2EEServer";
 
     private static String SERVER_VERSION_V6 =
             "--------------------------------------------------------------------------------\n" +
@@ -89,4 +112,6 @@ public class WebSphereDetectorTest extends BaseDetectorTest {
             "--------------------------------------------------------------------------------\n" +
             "End Installation Status Report\n" +
             "--------------------------------------------------------------------------------";
+    
+    private static String SERVER_VERSION_19_0_0_6 = "19.0.0.6";
 }

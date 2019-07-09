@@ -40,6 +40,9 @@ public class WebsphereDetector extends AbstractServerDetector {
     private static final Pattern SERVER_VERSION_PATTERN =
             Pattern.compile("^Version\\s+([0-9.]+)\\s*$.*?^Build Date\\s+([0-9/]+)\\s*$",
                             Pattern.MULTILINE | Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern LIBERTY_SERVER_VERSION_PATTERN = Pattern.compile("^([0-9.]+)");
+
     public static final  String  INTERNAL_ERROR_MSG = "Internal: Found AdminServiceFactory but can not call methods on it (wrong WAS version ?)";
 
     // Whether running under Websphere
@@ -47,9 +50,25 @@ public class WebsphereDetector extends AbstractServerDetector {
     private boolean isWebsphere7 = ClassUtil.checkForClass("com.ibm.websphere.management.AdminContext");
     private boolean isWebsphere6 = isWebsphere && !isWebsphere7;
 
+    private WebsphereServerHandle getLibertyHandle(MBeanServerExecutor pMBeanServerExecutor) {
+      String serverVersion =
+              getSingleStringAttribute(pMBeanServerExecutor, "WebSphere:j2eeType=J2EEServer,*", "serverVersion");
+      if (serverVersion != null) {
+    	  Matcher matcher = LIBERTY_SERVER_VERSION_PATTERN.matcher(serverVersion);
+    	  if (matcher.find()) {
+    		  return new WebsphereServerHandle(serverVersion, null);
+    	  }
+      }
+      return null;
+    }
+
     /** {@inheritDoc}
      * @param pMBeanServerExecutor*/
     public ServerHandle detect(MBeanServerExecutor pMBeanServerExecutor) {
+    	WebsphereServerHandle libertyHandle = getLibertyHandle(pMBeanServerExecutor);
+    	if (libertyHandle != null) {
+    		return libertyHandle;
+    	}
         String serverVersion =
                 getSingleStringAttribute(pMBeanServerExecutor, "*:j2eeType=J2EEServer,type=Server,*", "serverVersion");
         if (serverVersion != null && serverVersion.contains("WebSphere")) {
