@@ -41,7 +41,7 @@ public class WebsphereDetector extends AbstractServerDetector {
             Pattern.compile("^Version\\s+([0-9.]+)\\s*$.*?^Build Date\\s+([0-9/]+)\\s*$",
                             Pattern.MULTILINE | Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern LIBERTY_SERVER_VERSION_PATTERN = Pattern.compile("^([0-9.]+)");
+    private static final Pattern LIBERTY_SERVER_VERSION_PATTERN = Pattern.compile("^\\d+(\\.\\d+)*$");
 
     public static final  String  INTERNAL_ERROR_MSG = "Internal: Found AdminServiceFactory but can not call methods on it (wrong WAS version ?)";
 
